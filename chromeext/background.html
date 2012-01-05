@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script>
+    var ws;
+    var activeTab;
+    var openws = function() {
+      ws = new WebSocket("ws://localhost:9000/mws");
+
+      ws.onopen=function(){
+        // keepalive
+        setInterval(function(){ws.send("{}")}, 15000);
+      };
+
+      ws.onclose=function(){
+        console.log("Socket closed, reopening in 5");
+        ws = null;
+        setTimeout(openws, 5000);
+      };
+
+      var d = function(x) {return x;};
+
+      ws.onmessage = function(message) {
+        if (!activeTab) return;
+        if (message.data == '') return;
+        eval('var data = d(' + message.data + ');');
+        // send scroll command to doc
+        chrome.tabs.sendRequest(activeTab, data);
+      };
+
+    };
+
+    openws();
+
+    var sendTab = function(tabid) {
+      chrome.tabs.get(tabid, function(tab) {
+        activeTab = tabid;
+        var url = tab.url;
+        if (url.indexOf("http") != 0) return;
+        chrome.tabs.sendRequest(activeTab, {get:['url','height','width','scroll']});
+      });
+    };
+
+    chrome.windows.onFocusChanged.addListener(function(windowid) {
+      if (windowid < 0) return true;
+      chrome.tabs.getSelected(windowid, function(sel){
+        sendTab(sel.id);
+      });
+    });
+
+    chrome.tabs.onActiveChanged.addListener(function(tabid, selectinfo) {
+      sendTab(tabid);
+    });
+
+    chrome.webNavigation.onCommitted.addListener(function(details) {
+      chrome.tabs.executeScript(details.tabId, {file: "content.js"}, function(){console.log("content.js loaded")});
+      sendTab(details.tabId);
+    });
+
+    chrome.extension.onConnect.addListener(function(port) {
+      port.onMessage.addListener(function(msg) {
+        ws.send(JSON.stringify(msg));
+      });
+    });
+
+
+  </script>
+</html>

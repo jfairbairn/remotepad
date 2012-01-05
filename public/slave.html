@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script>
+      var isEmpty = function(o) {
+        for(i in o) {
+          if (o.hasOwnProperty(i)) return false;
+        }
+        return true;
+      };
+
+      var ready = function() {
+        var ws;
+
+        var reportScrollChanges = true;
+        var lastX = 0, lastY = 0;
+        var wsopen = function() {
+          ws = new WebSocket("ws://"+window.location.host+"/sws");
+          
+
+          ws.onopen = function() {
+            setInterval(function(){if (ws != null) ws.send('')}, 15000);
+            ws.send(JSON.stringify({get:['url','scroll','height','width']}));
+          }
+
+          ws.onclose = function() {
+            ws = null;
+            setTimeout(wsopen, 5000);
+          }
+
+          var parse = function(d){return d;}
+          
+          ws.onmessage = function(message) {
+            eval('var data = parse('+message.data+')');
+            if (data.url) {
+              console.log('navigating to ' + data.url);
+              document.getElementById("f").src=data.url;
+            }
+            if (data.height) {
+              document.getElementById("f").style.height = data.height + "px";
+              document.getElementById("protector").style.height = data.height + "px";
+            }
+            if (data.width) {
+              document.getElementById("f").style.width = data.width + "px";
+              document.getElementById("protector").style.width = data.width + "px";
+            }
+            if (data.scroll) {
+              console.log(data.scroll);
+              reportScrollChanges = false;
+              window.scrollTo(data.scroll[0], data.scroll[1]);
+              lastX = window.pageXOffset;
+              lastY = window.pageYOffset;
+              reportScrollChanges = true;
+            }
+          };
+
+          $('#protector').click(function(e) {
+            ws.send(JSON.stringify({click:[e.pageX, e.pageY]}));
+          });
+
+        };
+        
+        wsopen();
+
+        setInterval(function() {
+          if (ws != null) {
+            offs = [];
+            if (lastX != window.pageXOffset || lastY != window.pageYOffset) {
+              lastX = window.pageXOffset;
+              lastY = window.pageYOffset;
+              offs[0] = lastX;
+              offs[1] = lastY;
+            }
+            if (!isEmpty(offs) && reportScrollChanges) {
+              var scroll = JSON.stringify({scroll:offs});
+              ws.send(scroll);
+            }
+          }
+        }, 100);
+      };
+    </script>
+  </head>
+  <body style="margin:0;padding:0;background:black" onload="ready()">
+    <iframe style="position:absolute;top:0;left:0" src="about:blank" id="f" scrolling="no"></iframe>
+    <div style="position:absolute;top:0;left:0;z-index:1;background:red;opacity:0.0" id="protector"></div>
+  </body>
+
+</html>
