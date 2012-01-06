@@ -1,0 +1,29 @@
+THIS IS INSANE
+
+The master's browser extension connects via web socket to the server.
+The server sends a "challenge" message to the master, with a unique number in it.
+The master requests GETs a url off the server with that unique number as a parameter, thus exposing all its request headers.
+The server starts treating the master as "alive".
+
+Whenever the master browser navigates to a page, it sends that page's content to the slave as follows.
+
+Master takes the source of the document.
+It replaces every script src, link href, js, with a same-origin url.
+Send this modified source to the slave in a WS message, which also contains a list of id->url mappings for all these resources.
+The server remembers these until the master tells it to forget them (i.e. when it next navigates).
+
+The slave requests each of these URLs in turn, to the server.
+On receiving a request for an image, link href or js, the server maps that back to the URL, and sends a message to the master asking for the cookie string for that URL. (This is allowed because the master has access to the whole cookie store -- the magic of browser extensions.)
+The master replies to the server with the cookie.
+The server goes and fetches that resource, using the headers gathered earlier, mixed in with the cookie string.
+On completion of this download:
+the server caches the response if appropriate,
+and sends it down to the slave.
+
+(Should handle 304 properly)
+
+On master disconnect, the server needs to:
+Clear its request cache.
+Clear the master's challenge response.
+
+(Viewport scaling issues discussed here http://www.html5rocks.com/en/mobile/mobifying.html)
