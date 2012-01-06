@@ -13,6 +13,7 @@
       var ready = function() {
         var ws;
 
+
         var reportScrollChanges = true;
         var lastX = 0, lastY = 0;
         var wsopen = function() {
@@ -21,7 +22,7 @@
 
           ws.onopen = function() {
             setInterval(function(){if (ws != null) ws.send('')}, 15000);
-            ws.send(JSON.stringify({get:['url','scroll','height','width']}));
+            ws.send(JSON.stringify({get:['url', 'src','scroll','height','width']}));
           }
 
           ws.onclose = function() {
@@ -33,10 +34,6 @@
           
           ws.onmessage = function(message) {
             eval('var data = parse('+message.data+')');
-            if (data.url) {
-              console.log('navigating to ' + data.url);
-              document.getElementById("f").src=data.url;
-            }
             if (data.height) {
               document.getElementById("f").style.height = data.height + "px";
               document.getElementById("protector").style.height = data.height + "px";
@@ -46,12 +43,22 @@
               document.getElementById("protector").style.width = data.width + "px";
             }
             if (data.scroll) {
-              console.log(data.scroll);
               reportScrollChanges = false;
               window.scrollTo(data.scroll[0], data.scroll[1]);
               lastX = window.pageXOffset;
               lastY = window.pageYOffset;
               reportScrollChanges = true;
+            }
+            if (data.src) {
+              var x = $('html',document.getElementById("f").contentWindow.document);
+              x.empty();
+              var head = $('<head></head>').append(data.src.head);
+              console.log(head);
+              x.append(
+                  head
+              ).append(
+                  $('<body></body>').append(data.src.body)
+              );
             }
           };
 
@@ -82,8 +89,8 @@
     </script>
   </head>
   <body style="margin:0;padding:0;background:black" onload="ready()">
-    <iframe style="position:absolute;top:0;left:0" src="about:blank" id="f" scrolling="no"></iframe>
-    <div style="position:absolute;top:0;left:0;z-index:1;background:red;opacity:0.0" id="protector"></div>
+    <iframe style="position:absolute;top:0;left:0" id="f" scrolling="no" src="/empty.html"></iframe>
+    <div style="display:none;position:absolute;top:0;left:0;z-index:1;background:red;opacity:0.0" id="protector"></div>
   </body>
 
 </html>

@@ -3,9 +3,10 @@
   "version": "1.0",
   "description":"If you need to know, you already will.",
   "background_page":"background.html",
-  "permissions": ["cookies", "tabs", "webNavigation", "*://*/"]
-  // "content_scripts": [{
-  //   "matches": ["*://*/"],
-  //   "js": ["content.js"]
-  // }]
+  "permissions": ["cookies", "tabs", "webNavigation", "*://*/"],
+  "content_scripts": [{
+    "matches": ["*://*/*"],
+    "js": ["jquery.js", "content.js"],
+    "run_at": "document_start"
+  }]
 }

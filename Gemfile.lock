@@ -29,6 +29,13 @@ GEM
     addressable (2.2.6)
     async-rack (0.5.1)
       rack (~> 1.1)
+    em-http-request (1.0.0)
+      addressable (>= 2.2.3)
+      em-socksify
+      eventmachine (>= 1.0.0.beta.3)
+      http_parser.rb (>= 0.5.2)
+    em-socksify (0.1.0)
+      eventmachine
     em-synchrony (1.0.0)
       eventmachine (>= 1.0.0.beta.1)
     eventmachine (1.0.0.beta.4)
@@ -39,6 +46,7 @@ GEM
     json (1.6.4)
     log4r (1.1.10)
     multi_json (1.0.4)
+    nokogiri (1.5.0)
     rack (1.4.0)
     rack-accept-media-types (0.9)
     rack-contrib (1.1.0)
@@ -52,7 +60,9 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  em-http-request
   em-websocket!
   goliath!
   json
+  nokogiri
   rack

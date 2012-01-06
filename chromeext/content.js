@@ -47,6 +47,10 @@ chrome.extension.onRequest.addListener(function(req, sender, cb) {
       if (thing == 'scroll') {
         resp['scroll'] = [lastX, lastY];
       }
+      if (thing == 'src') {
+        resp['src'] = $("html").html();
+        resp['url'] = window.location.href;
+      }
     }
     if (!isEmpty(resp))
       port.postMessage(resp);
@@ -77,3 +81,4 @@ setInterval(function() {
       port.postMessage({scroll:offs});
     }
 }, 100);
+

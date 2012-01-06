@@ -5,7 +5,7 @@
     var ws;
     var activeTab;
     var openws = function() {
-      ws = new WebSocket("ws://localhost:9000/mws");
+      ws = new WebSocket("ws://james02:9000/mws");
 
       ws.onopen=function(){
         // keepalive
@@ -37,7 +37,7 @@
         activeTab = tabid;
         var url = tab.url;
         if (url.indexOf("http") != 0) return;
-        chrome.tabs.sendRequest(activeTab, {get:['url','height','width','scroll']});
+        chrome.tabs.sendRequest(activeTab, {get:['url','height','width','scroll','src']});
       });
     };
 
@@ -53,7 +53,6 @@
     });
 
     chrome.webNavigation.onDOMContentLoaded.addListener(function(details) {
-      chrome.tabs.executeScript(details.tabId, {file: "content.js"}, function(){console.log("content.js loaded")});
       sendTab(details.tabId);
     });
 
