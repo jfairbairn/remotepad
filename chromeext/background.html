@@ -52,7 +52,7 @@
       sendTab(tabid);
     });
 
-    chrome.webNavigation.onCommitted.addListener(function(details) {
+    chrome.webNavigation.onDOMContentLoaded.addListener(function(details) {
       chrome.tabs.executeScript(details.tabId, {file: "content.js"}, function(){console.log("content.js loaded")});
       sendTab(details.tabId);
     });
