@@ -17,12 +17,12 @@ RMAP = {} unless defined? RMAP# reverse map: local url => url
 class SlaveEndpoint < Goliath::WebSocket
   def on_open(env)
     puts "slave open"
-    SLAVES << env.handler
+    SLAVES << env['handler']
   end
 
   def on_close(env)
     puts "slave close"
-    SLAVES.delete(env.handler)
+    SLAVES.delete(env['handler'])
   end
 
   def on_message(env, msg)
@@ -38,12 +38,12 @@ class MasterEndpoint < Goliath::WebSocket
   def on_open(env)
     puts "master open"
     @url_id = 0
-    MASTERS << env.handler
+    MASTERS << env['handler']
   end
 
   def on_close(env)
     puts "master close"
-    MASTERS.delete env.handler
+    MASTERS.delete env['handler']
   end
 
   def on_message(env, msg)
