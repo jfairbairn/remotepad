@@ -1,1 +1,1 @@
-web: bundle exec ruby remotepad.rb -sv -p $PORT
+web: ruby remotepad.rb -sv -p $PORT -e production
