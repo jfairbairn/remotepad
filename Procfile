@@ -1,1 +1,1 @@
-web: ruby remotepad.rb -sv -p $PORT
+web: bundle exec ruby remotepad.rb -sv -p $PORT
