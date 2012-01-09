@@ -8,7 +8,7 @@ GIT
 
 GIT
   remote: https://github.com/postrank-labs/goliath.git
-  revision: 8a1476e0fc22655a87650872b0e6686f3febf0c3
+  revision: b3b4de1f05ec5a8e173a8386ad267c9c31508771
   specs:
     goliath (0.9.4)
       async-rack
