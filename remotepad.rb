@@ -5,7 +5,7 @@ require 'em-http'
 require 'em-synchrony/em-http'
 require 'nokogiri'
 require 'set'
-require 'json'
+require 'yajl'
 require 'yaml'
 require 'pp'
 
@@ -49,7 +49,7 @@ class MasterEndpoint < Goliath::WebSocket
   def on_message(env, msg)
     msg ||= '{}'
     puts msg
-    obj = JSON.parse(msg)
+    obj = Yajl.load(msg)
     return if obj.empty?
     # puts "master msg #{msg}"
     if obj['src'] && obj['url']
@@ -57,7 +57,7 @@ class MasterEndpoint < Goliath::WebSocket
       obj['base'] = get_base(obj['url'])
     end
     SLAVES.each do |slave|
-      slave.send_text_frame(obj.to_json)
+      slave.send_text_frame(Yajl.dump(obj))
     end
   end
 
