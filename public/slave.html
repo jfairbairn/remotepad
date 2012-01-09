@@ -17,7 +17,8 @@
         var reportScrollChanges = true;
         var lastX = 0, lastY = 0;
         var wsopen = function() {
-          ws = new WebSocket("ws://"+window.location.host+"/sws");
+          var protocol = window.location.protocol == 'http:' ? 'ws://' : 'wss://';
+          ws = new WebSocket(protocol+window.location.host+"/sws");
           
 
           ws.onopen = function() {
