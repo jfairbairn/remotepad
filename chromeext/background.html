@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
-  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script src="jquery.js"></script>
   <script>
     var ws;
     var activeTab;
+    var wsurl = localStorage["ws"] || "wss://remotepad.herokuapp.com/mws";
+
     var openws = function() {
-      ws = new WebSocket("ws://localhost:9000/mws");
+      ws = new WebSocket(wsurl);
 
       ws.onopen=function(){
         // keepalive

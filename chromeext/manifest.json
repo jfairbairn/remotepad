@@ -4,6 +4,7 @@
   "description":"If you need to know, you already will.",
   "background_page":"background.html",
   "permissions": ["cookies", "tabs", "webNavigation", "*://*/"],
+  "options_page":"options.html",
   "content_scripts": [{
     "matches": ["*://*/*"],
     "js": ["jquery.js", "content.js"],
