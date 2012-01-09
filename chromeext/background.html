@@ -5,7 +5,7 @@
     var ws;
     var activeTab;
     var openws = function() {
-      ws = new WebSocket("ws://james02:9000/mws");
+      ws = new WebSocket("ws://localhost:9000/mws");
 
       ws.onopen=function(){
         // keepalive

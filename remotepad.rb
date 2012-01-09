@@ -9,10 +9,10 @@ require 'json'
 require 'yaml'
 require 'pp'
 
-SLAVES = Set.new
-MASTERS = Set.new
-MAP = {} # map of url => local url
-RMAP = {} # reverse map: local url => url
+SLAVES = Set.new unless defined? SLAVES
+MASTERS = Set.new unless defined? MASTERS
+MAP = {} unless defined? MAP # map of url => local url
+RMAP = {} unless defined? RMAP# reverse map: local url => url
 
 class SlaveEndpoint < Goliath::WebSocket
   def on_open(env)
@@ -47,11 +47,14 @@ class MasterEndpoint < Goliath::WebSocket
   end
 
   def on_message(env, msg)
+    msg ||= '{}'
+    puts msg
     obj = JSON.parse(msg)
     return if obj.empty?
     # puts "master msg #{msg}"
     if obj['src'] && obj['url']
       obj['src'] = transform_and_map(obj['url'], obj['src'])
+      obj['base'] = get_base(obj['url'])
     end
     SLAVES.each do |slave|
       slave.send_text_frame(obj.to_json)
@@ -92,10 +95,11 @@ class MasterEndpoint < Goliath::WebSocket
 
   def translate(url, base)
     return url if url =~ /^data:/
-    unless url =~ /^http[s]:\/\//
+    puts "*** #{url}"
+    if url !~ /^https?:\/\//
       if url =~ /^\//
         # absolute path. only prepend the protocol and host.
-        url = "#{base.sub(/(^https?:\/\/[^\/]*)\/.*$/, '\1')}#{url}"
+        url = "#{base.sub(/^(https?:\/\/[^\/]*)\/.*$/, '\1')}#{url}"
       else 
         # relative path. prepend the protocol, host and base directory.
         url = "#{base}#{url}" 
@@ -104,7 +108,7 @@ class MasterEndpoint < Goliath::WebSocket
     return MAP[url] if MAP[url]
     @url_id += 1
 
-    "/resource/#{@url_id}".tap do |local_url|
+    "http://localhost:9000/resource/#{@url_id}".tap do |local_url|
       MAP[url] = local_url
       RMAP[local_url] = url
     end
@@ -127,15 +131,19 @@ class EvilProxy < Goliath::API
     end
     req = EM::HttpRequest.new(url)
     status = 302
-    while status == 302
+    redirect_count = 0
+    while status == 302 && redirect_count < 5
       resp = req.get({:query=>env.params})
       status = resp.response_header.status.to_i
       response_headers = {}
       resp.response_header.each_pair do |k,v|
+        next if to_http_header(k) == 'Connection'
+        next if to_http_header(k) == 'Transfer-Encoding' && v == 'chunked'
         response_headers[to_http_header(k)] = v
       end
       if status == 302
         url = response_headers['Location']
+        redirect_count += 1
       elsif status != 200
         puts "**** FAIL"
         puts url

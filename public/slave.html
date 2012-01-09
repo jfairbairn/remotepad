@@ -52,10 +52,8 @@
             if (data.src) {
               var x = $('html',document.getElementById("f").contentWindow.document);
               x.empty();
-              var head = $('<head></head>').append(data.src.head);
-              console.log(head);
               x.append(
-                  head
+                  $('<head></head>').append(data.src.head).append('<base href="'+data.base+'">')
               ).append(
                   $('<body></body>').append(data.src.body)
               );
@@ -90,7 +88,7 @@
   </head>
   <body style="margin:0;padding:0;background:black" onload="ready()">
     <iframe style="position:absolute;top:0;left:0" id="f" scrolling="no" src="/empty.html"></iframe>
-    <div style="display:none;position:absolute;top:0;left:0;z-index:1;background:red;opacity:0.0" id="protector"></div>
+    <div style="position:absolute;top:0;left:0;z-index:1;background:red;opacity:0.0" id="protector"></div>
   </body>
 
 </html>
