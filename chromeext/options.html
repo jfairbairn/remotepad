@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="jquery.js"></script>
+<script>
+$(document).ready(function() {
+
+  var defaultws = "wss://remotepad.herokuapp.com/mws";
+  $("form").submit(function() {
+    localStorage["ws"] = $("#ws").val();
+  });
+
+  $("#ws").val(localStorage["ws"] || defaultws);
+
+  $("#reset").click(function() {
+    $("#ws").val(defaultws);
+    $("form").submit();
+  });
+
+});
+</script>
+
+<style type="text/css">
+input[type=text] {
+  width: 50em;
+  font-size: 12pt;
+}
+
+body {
+  font-family: sans-serif;
+  font-size: 12pt;
+}
+</style>
+</head>
+<body>
+
+<form>
+
+<h3>Websocket endpoint</h3>
+
+<input type="text" name="ws" id="ws">
+<br>
+<input type="submit" value="Save">
+<button id="reset" value="Reset to default">Reset to default</button>
+</form>
+</body>
+</html>
