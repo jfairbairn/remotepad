@@ -48,7 +48,7 @@ class MasterEndpoint < Goliath::WebSocket
 
   def on_message(env, msg)
     msg ||= '{}'
-    puts msg
+    # puts msg
     obj = Yajl.load(msg)
     return if obj.empty?
     # puts "master msg #{msg}"
@@ -95,7 +95,7 @@ class MasterEndpoint < Goliath::WebSocket
 
   def translate(url, base)
     return url if url =~ /^data:/
-    puts "*** #{url}"
+    old_url = url
     if url !~ /^https?:\/\//
       if url =~ /^\//
         # absolute path. only prepend the protocol and host.
@@ -105,6 +105,7 @@ class MasterEndpoint < Goliath::WebSocket
         url = "#{base}#{url}" 
       end
     end
+    puts "*** #{old_url} -> #{url}"
     return MAP[url] if MAP[url]
     @url_id += 1
 
@@ -124,11 +125,12 @@ class EvilProxy < Goliath::API
       return [200, {'Content-Type'=>'text/plain'}, RMAP.to_yaml]
     end
     resource_id = env['PATH_INFO'].sub(/^\//, '').to_i
-    return [404, {}, 'not found'] if resource_id < 1
-    url = RMAP["/resource/#{resource_id}"]
-    if url == '' || url.nil?
-      pp RMAP
-    end
+    url = RMAP["http://localhost:9000/resource/#{resource_id}"]
+    return not_found(url) if resource_id < 1
+    # if url == '' || url.nil?
+    #   pp RMAP
+    # end
+    # puts url, resource_id
     req = EM::HttpRequest.new(url)
     status = 302
     redirect_count = 0
@@ -154,6 +156,11 @@ class EvilProxy < Goliath::API
     end
     [resp.response_header.status, response_headers, resp.response]
   end
+
+  def not_found(url)
+    [404, {}, 'not found']
+  end
+
   def to_http_header(k)
     k.downcase.split('_').map{|i|i.capitalize}.join('-')
   end
