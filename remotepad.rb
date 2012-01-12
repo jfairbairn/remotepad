@@ -58,7 +58,9 @@ class MasterEndpoint < Goliath::WebSocket
       obj['base'] = get_base(obj['url'])
     end
     SLAVES.each do |slave|
-      slave.send_text_frame(Yajl.dump(obj))
+      msg = Yajl.dump(obj)
+      msg.force_encoding 'UTF-8'
+      slave.send_text_frame
     end
   end
 
