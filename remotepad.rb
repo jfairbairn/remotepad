@@ -53,7 +53,8 @@ class MasterEndpoint < Goliath::WebSocket
     return if obj.empty?
     # puts "master msg #{msg}"
     if obj['src'] && obj['url']
-      obj['src'] = transform_and_map(obj['url'], obj['src'])
+      host = env['HTTP_HOST']
+      obj['src'] = transform_and_map(obj['url'], obj['src'], host)
       obj['base'] = get_base(obj['url'])
     end
     SLAVES.each do |slave|
@@ -61,7 +62,7 @@ class MasterEndpoint < Goliath::WebSocket
     end
   end
 
-  def transform_and_map(url, html)
+  def transform_and_map(url, html, host)
     uri = URI.parse(url)
     str = "<!DOCTYPE html>\n<html>\n#{html}\n</html>"
     puts "input:"
@@ -71,14 +72,14 @@ class MasterEndpoint < Goliath::WebSocket
     base_el = doc.css('base')
     base_el.each do |el|
       base = el['href']
-      el['href'] = 'http://james02:9000/'
+      el['href'] = "http://#{host}/"
     end
     
     %w(href src).each do |att|
       doc.css("*[#{att}]").each do |el|
         next if el.name == 'a'
         old = el[att]
-        el.attribute(att).value = translate(old, base)
+        el.attribute(att).value = translate(old, base, host)
       end
     end
 
@@ -93,7 +94,7 @@ class MasterEndpoint < Goliath::WebSocket
     url.sub(/\?.*/, '').sub(/(.*\/).*/, '\1')
   end
 
-  def translate(url, base)
+  def translate(url, base, host)
     return url if url =~ /^data:/
     old_url = url
     if url !~ /^https?:\/\//
@@ -109,7 +110,7 @@ class MasterEndpoint < Goliath::WebSocket
     return MAP[url] if MAP[url]
     @url_id += 1
 
-    "http://localhost:9000/resource/#{@url_id}".tap do |local_url|
+    "http://#{host}/resource/#{@url_id}".tap do |local_url|
       MAP[url] = local_url
       RMAP[local_url] = url
     end
@@ -125,7 +126,7 @@ class EvilProxy < Goliath::API
       return [200, {'Content-Type'=>'text/plain'}, RMAP.to_yaml]
     end
     resource_id = env['PATH_INFO'].sub(/^\//, '').to_i
-    url = RMAP["http://localhost:9000/resource/#{resource_id}"]
+    url = RMAP["http://#{env['HTTP_HOST']}/resource/#{resource_id}"]
     return not_found(url) if resource_id < 1
     # if url == '' || url.nil?
     #   pp RMAP
