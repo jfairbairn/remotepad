@@ -36,12 +36,12 @@
           ws.onmessage = function(message) {
             eval('var data = parse('+message.data+')');
             if (data.height) {
-              document.getElementById("f").style.height = data.height + "px";
-              document.getElementById("protector").style.height = data.height + "px";
+              $("#f").height(data.height);
+              $("#protector").height(data.height);
             }
             if (data.width) {
-              document.getElementById("f").style.width = data.width + "px";
-              document.getElementById("protector").style.width = data.width + "px";
+              $("#f").width(data.width);
+              $("#protector").width(data.width);
             }
             if (data.scroll) {
               reportScrollChanges = false;
@@ -51,13 +51,18 @@
               reportScrollChanges = true;
             }
             if (data.src) {
-              var x = $('html',document.getElementById("f").contentWindow.document);
-              x.empty();
-              x.append(
-                  $('<head></head>').append(data.src.head).append('<base href="'+data.base+'">')
-              ).append(
-                  $('<body></body>').append(data.src.body)
+              var x = $('html',$("#f")[0].contentWindow.document);
+              $('head', x).replaceWith(
+                $('<head></head>').append(data.src.head)
               );
+              $('body', x).replaceWith(
+                $('<body></body>').append(data.src.body)
+              );
+              $('head', x).append('<base href="'+data.base+'">');
+            }
+            if (data.url) {
+              console.log(data.url);
+              $("#f").attr('src', data.url);
             }
           };
 
@@ -89,7 +94,7 @@
   </head>
   <body style="margin:0;padding:0;background:black" onload="ready()">
     <iframe style="position:absolute;top:0;left:0" id="f" scrolling="no" src="/empty.html"></iframe>
-    <div style="position:absolute;top:0;left:0;z-index:1;background:red;opacity:0.0" id="protector"></div>
+    <div style="display:none;position:absolute;top:0;left:0;z-index:1;background:red;opacity:0.0" id="protector"></div>
   </body>
 
 </html>

@@ -52,31 +52,22 @@ class MasterEndpoint < Goliath::WebSocket
     obj = Yajl.load(msg)
     return if obj.empty?
     # puts "master msg #{msg}"
-    if obj['src'] && obj['url']
+    if (src = obj.delete('src')) && url = obj.delete('url')
       host = env['HTTP_HOST']
-      obj['src'] = transform_and_map(obj['url'], obj['src'], host)
-      obj['base'] = get_base(obj['url'])
+      obj['url'] = "http://#{host}/doc/#{DocumentCache.add(transform_and_map(url, src, host))}"
     end
     SLAVES.each do |slave|
       msg = Yajl.dump(obj)
       msg.force_encoding 'UTF-8'
-      slave.send_text_frame
+      slave.send_text_frame(msg)
     end
   end
 
   def transform_and_map(url, html, host)
     uri = URI.parse(url)
     str = "<!DOCTYPE html>\n<html>\n#{html}\n</html>"
-    puts "input:"
-    puts str[0..600]
     doc = Nokogiri::HTML(str)
     base = get_base(url)
-    base_el = doc.css('base')
-    base_el.each do |el|
-      base = el['href']
-      el['href'] = "http://#{host}/"
-    end
-    
     %w(href src).each do |att|
       doc.css("*[#{att}]").each do |el|
         next if el.name == 'a'
@@ -85,11 +76,31 @@ class MasterEndpoint < Goliath::WebSocket
       end
     end
 
-    doc.css("*[onclick]").each do |el|
+    base_el = doc.css('base')
+    base_el.each do |el|
+      base = el['href']
+      el['href'] = "http://#{uri.host}:#{uri.port}/"
+    end
+
+    if base_el.empty?
+      doc.css('head').each do |head_el|
+        child = head_el.first_element_child
+        newel = "<base href=\"http://#{uri.host}:#{uri.port}\">"
+        if child
+          child.add_previous_sibling(newel)
+        else
+          head_el.add_child(newel)
+        end
+      end
+    end
+
+   doc.css("*[onclick]").each do |el|
       el['onclick'] = ''
     end
 
-    {'head'=>doc.css('html>head').inner_html,'body'=>doc.css('html>body').inner_html}
+    doc.to_html
+
+    #{'head'=>doc.css('html>head').inner_html,'body'=>doc.css('html>body').inner_html}
   end
 
   def get_base(url)
@@ -98,7 +109,11 @@ class MasterEndpoint < Goliath::WebSocket
 
   def translate(url, base, host)
     return url if url =~ /^data:/
+    parsed = URI.parse(url)
     old_url = url
+    if url =~ /^\/\//
+      url = "#{parsed.scheme}:#{url}"
+    end
     if url !~ /^https?:\/\//
       if url =~ /^\//
         # absolute path. only prepend the protocol and host.
@@ -108,7 +123,7 @@ class MasterEndpoint < Goliath::WebSocket
         url = "#{base}#{url}" 
       end
     end
-    puts "*** #{old_url} -> #{url}"
+    #puts "*** #{old_url} -> #{url}"
     return MAP[url] if MAP[url]
     @url_id += 1
 
@@ -157,6 +172,8 @@ class EvilProxy < Goliath::API
         puts "**** /FAIL"
       end
     end
+    response_headers['X-Remotepad-URL'] = url
+    response_headers['Cache-Control'] = 'no-cache' #for now
     [resp.response_header.status, response_headers, resp.response]
   end
 
@@ -169,12 +186,37 @@ class EvilProxy < Goliath::API
   end
 end
 
+class DocumentCache < Goliath::API
+  DOCS = {}
+
+  def response(env)
+    puts self.class
+    if env['PATH_INFO'] == '/map'
+      return [200, {'Content-Type'=>'text/plain'}, DOCS.inspect]
+    end
+    doc_id = env['PATH_INFO'].sub(/^\//, '').to_i
+    doc = DOCS[doc_id]
+    return [404, {'Content-Type'=>'text/plain'}, 'Not found'] if doc_id < 1 || doc.nil?
+    [200, {'Content-Type'=>'text/html'}, doc]
+  end
+
+  def self.add(doc)
+    @@count ||= 0
+    @@count+=1
+    DOCS[@@count] =doc
+    @@count
+  end
+
+end
+
+
 class MasterWebapp < Goliath::API
   use Rack::Static, :root => 'public', :urls => ['/slave.html', '/chromeext.crx', '/empty.html']
 
   map '/mws', MasterEndpoint
   map '/sws', SlaveEndpoint
   map '/resource/*', EvilProxy
+  map '/doc/*', DocumentCache
 
   def response(env)
     [404, {}, env.inspect]
