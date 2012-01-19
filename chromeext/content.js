@@ -1,5 +1,8 @@
 // alert("foo");
 // console.log('loaded content.js');
+(function(){
+var idsUpdated = false;
+var idNum = 0;
 var isEmpty = function(o) {
   for(i in o) {
     if (o.hasOwnProperty(i)) return false;
@@ -33,6 +36,15 @@ chrome.extension.onRequest.addListener(function(req, sender, cb) {
   if (req.get) {
     var things = req.get;
     resp = {};
+    if (!idsUpdated) {
+      $("*").each(function(){
+        var el = $(this);
+        if (!el.attr("id")) {
+          el.attr("id", "cmtv" + idNum++);
+        }
+      });
+      idsUpdated = true;
+    }
     for (i in things) {
       var thing = things[i];
       if (thing == 'height') {
@@ -82,3 +94,4 @@ setInterval(function() {
     }
 }, 100);
 
+})();
