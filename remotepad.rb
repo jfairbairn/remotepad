@@ -152,8 +152,14 @@ class EvilProxy < Goliath::API
     req = EM::HttpRequest.new(url)
     status = 302
     redirect_count = 0
-    while status == 302 && redirect_count < 5
-      resp = req.get({:query=>env.params})
+    req_hdrs = env.reject{|k,v| k !~ /^HTTP_/}
+    req_headers = {}
+    req_hdrs.each do |k,v|
+      next if k == 'HTTP_ACCEPT_ENCODING'
+      req_headers[to_http_header(k)] = v
+    end
+    while [302, 301].member?(status) && redirect_count < 5
+      resp = req.get({:query=>env.params, :head=>req_headers})
       status = resp.response_header.status.to_i
       response_headers = {}
       resp.response_header.each_pair do |k,v|
@@ -169,6 +175,7 @@ class EvilProxy < Goliath::API
         puts url
         puts resp.response_header.status
         pp response_headers
+        puts "redirect_count: #{redirect_count}"
         puts "**** /FAIL"
       end
     end
@@ -182,7 +189,7 @@ class EvilProxy < Goliath::API
   end
 
   def to_http_header(k)
-    k.downcase.split('_').map{|i|i.capitalize}.join('-')
+    k.sub(/^HTTP_/, '').downcase.split('_').map{|i|i.capitalize}.join('-')
   end
 end
 
