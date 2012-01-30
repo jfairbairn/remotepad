@@ -155,11 +155,14 @@ class EvilProxy < Goliath::API
     req_hdrs = env.reject{|k,v| k !~ /^HTTP_/}
     req_headers = {}
     req_hdrs.each do |k,v|
-      next if k == 'HTTP_ACCEPT_ENCODING'
+      next if %w(
+        HTTP_ACCEPT_ENCODING HTTP_HOST HTTP_IF_MODIFIED_SINCE HTTP_IF_NONE_MATCH
+      ).member? k
       req_headers[to_http_header(k)] = v
     end
     while [302, 301].member?(status) && redirect_count < 5
-      resp = req.get({:query=>env.params, :head=>req_headers})
+      opts = {:query=>env.params, :head=>req_headers}
+      resp = req.get(opts)
       status = resp.response_header.status.to_i
       response_headers = {}
       resp.response_header.each_pair do |k,v|
@@ -170,10 +173,12 @@ class EvilProxy < Goliath::API
       if status == 302
         url = response_headers['Location']
         redirect_count += 1
+        puts "redirected to #{url}"
       elsif status != 200
         puts "**** FAIL"
         puts url
-        puts resp.response_header.status
+        pp req_headers.reject{|k,v|k=='Cookie'}
+        puts status
         pp response_headers
         puts "redirect_count: #{redirect_count}"
         puts "**** /FAIL"
